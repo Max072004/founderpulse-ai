@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 93%;
+  --card: 0 0% 6%;
+  --card-foreground: 0 0% 93%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 58%;
+  --border: 0 0% 14%;
+  --primary: 213 94% 68%;
+  --primary-foreground: 0 0% 4%;
+  --accent: 152 60% 48%;
+  --accent-foreground: 0 0% 4%;
+  --warning: 38 92% 58%;
+  --danger: 0 72% 58%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: hsl(var(--background));
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(96, 165, 250, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(52, 211, 153, 0.04), transparent),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(96, 165, 250, 0.22);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .font-data {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .surface {
+    @apply rounded-xl border border-border/80 bg-card/60 shadow-soft-border backdrop-blur-sm;
+  }
+
+  .surface-interactive {
+    @apply surface transition duration-200 ease-out;
+  }
+
+  .surface-interactive:hover {
+    @apply border-border bg-card/80;
+  }
+
+  .glow-accent {
+    box-shadow:
+      0 0 0 1px rgba(96, 165, 250, 0.12),
+      0 8px 32px -8px rgba(96, 165, 250, 0.15);
+  }
+
+  .divider-fade {
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+    height: 1px;
+  }
+}
+
+@layer components {
+  .section-label {
+    @apply text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  .display-title {
+    @apply text-3xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl;
+  }
+
+  .body-muted {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(0 0% 22%);
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.card-screenshot-mode header[class*="sticky"] {
+  display: none;
+}
+
+.card-screenshot-mode .surface:not(.card-screenshot-canvas *) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.card-screenshot-canvas {
+  border-color: transparent;
+  background: #030304;
+}
+
+.brief-page main {
+  padding-top: 0;
+}
+
+.brief-export-mode {
+  background: hsl(var(--background));
+}
+
+.brief-export-canvas {
+  padding: 2.5rem;
+}
+
+.brief-export-document {
+  background: hsl(var(--card) / 0.85);
+  box-shadow:
+    0 0 0 1px hsl(var(--border) / 0.8),
+    0 24px 80px -24px rgba(0, 0, 0, 0.6);
+}
+
+.brief-export-header h1 {
+  font-size: 2.25rem;
+}
+
+@media print {
+  .brief-export-mode header[class*="sticky"] {
+    display: none;
+  }
+
+  .brief-export-document {
+    border: none;
+    box-shadow: none;
+  }
+}
+
+.timeline-scroll {
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timeline-scroll > section {
+  scroll-snap-align: start;
+}
+
+.timeline-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.timeline-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(0 0% 14%) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
