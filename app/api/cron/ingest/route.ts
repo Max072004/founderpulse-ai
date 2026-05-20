@@ -28,7 +28,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const result = await runIngestion();
+  // Start ingestion but don't wait
+  runIngestion().catch(console.error);
 
-  return NextResponse.json({ data: result });
+  return NextResponse.json({
+    success: true,
+    message: "FounderPulse ingestion started",
+  });
 }
