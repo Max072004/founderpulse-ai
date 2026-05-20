@@ -13,9 +13,12 @@ export type IngestionResult = {
 };
 
 function sleep(ms: number) {
-  return new Promise(resolve =>
-    setTimeout(resolve, ms)
+
+  return new Promise(
+    resolve =>
+      setTimeout(resolve, ms)
   );
+
 }
 
 async function upsertRawArticle(
@@ -26,27 +29,16 @@ async function upsertRawArticle(
     getServiceSupabase();
 
   const {
-    data: existing,
-    error
+    data: existing
   } =
   await supabase
-
     .from("articles")
-
-    .select(
-      "id,status"
-    )
-
+    .select("id,status")
     .eq(
       "hash",
       article.hash
     )
-
     .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
 
   if (existing) {
 
@@ -67,12 +59,10 @@ async function upsertRawArticle(
 
   const {
     data,
-    error: insertError
+    error
   } =
   await supabase
-
     .from("articles")
-
     .insert({
 
       title:
@@ -125,9 +115,8 @@ async function upsertRawArticle(
 
     .single();
 
-  if (insertError) {
-    throw insertError;
-  }
+  if (error)
+    throw error;
 
   return {
 
@@ -145,7 +134,6 @@ async function upsertRawArticle(
 }
 
 export async function runIngestion():
-
 Promise<IngestionResult> {
 
   const supabase =
@@ -156,8 +144,10 @@ Promise<IngestionResult> {
       DEFAULT_FEEDS
     );
 
-  const result =
-  {
+  const batch =
+    articles.slice(0, 10);
+
+  const result = {
 
     fetched:
       articles.length,
@@ -177,10 +167,8 @@ Promise<IngestionResult> {
   };
 
   for (
-
     const article
-    of articles
-
+    of batch
   ) {
 
     let articleId =
@@ -189,10 +177,9 @@ Promise<IngestionResult> {
     try {
 
       const upserted =
-
-      await upsertRawArticle(
-        article
-      );
+        await upsertRawArticle(
+          article
+        );
 
       articleId =
         upserted.articleId;
@@ -213,9 +200,7 @@ Promise<IngestionResult> {
       }
 
       if (
-
         upserted.inserted
-
       ) {
 
         result.inserted++;
@@ -223,29 +208,25 @@ Promise<IngestionResult> {
       }
 
       const insight =
+        await generateFounderInsight({
 
-      await generateFounderInsight({
+          title:
+            article.title,
 
-        title:
-          article.title,
+          sourceName:
+            article.sourceName,
 
-        sourceName:
-          article.sourceName,
+          url:
+            article.canonicalUrl,
 
-        url:
-          article.canonicalUrl,
+          excerpt:
+            article.rawExcerpt,
 
-        excerpt:
-          article.rawExcerpt,
+          categoryHint:
+            article.categoryHint
 
-        categoryHint:
-          article.categoryHint
+        });
 
-      });
-
-      const {
-        error: updateError
-      } =
       await supabase
 
         .from("articles")
@@ -277,17 +258,12 @@ Promise<IngestionResult> {
 
             [STRATEGIC_SIGNAL_METADATA_KEY]:
 
-            insight
-              .strategic_signal
+            insight.strategic_signal
 
           },
 
           status:
-            "summarized",
-
-          updated_at:
-            new Date()
-              .toISOString()
+            "summarized"
 
         })
 
@@ -296,32 +272,17 @@ Promise<IngestionResult> {
           articleId
         );
 
-      if (
-        updateError
-      ) {
-
-        throw updateError;
-
-      }
-
       result.summarized++;
 
-      await sleep(
-        1000
-      );
+      await sleep(300);
 
     }
 
     catch (error) {
 
-      console.log(
-        "Failed:",
-        error
-      );
+      console.log(error);
 
-      if (
-        articleId
-      ) {
+      if (articleId) {
 
         await supabase
 
