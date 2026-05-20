@@ -16,8 +16,8 @@ export async function GET(request: Request) {
   if (!secret) {
 
     return NextResponse.json(
-      { error: "Missing secret" },
-      { status: 401 }
+      { error:"Missing secret" },
+      { status:401 }
     );
 
   }
@@ -25,18 +25,22 @@ export async function GET(request: Request) {
   if (secret !== env.CRON_SECRET) {
 
     return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
+      { error:"Unauthorized" },
+      { status:401 }
     );
 
   }
 
-  const result =
-    await runIngestion();
+  runIngestion()
+    .catch(console.error);
 
   return NextResponse.json({
-    success: true,
-    data: result
+
+    success:true,
+
+    message:
+    "FounderPulse ingestion started"
+
   });
 
 }

@@ -307,7 +307,7 @@ Promise<IngestionResult> {
       result.summarized++;
 
       await sleep(
-        1200
+        1000
       );
 
     }
