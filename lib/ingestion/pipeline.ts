@@ -5,120 +5,148 @@ import { fetchAllFeeds, RawArticle } from "@/lib/ingestion/rss";
 import { DEFAULT_FEEDS } from "@/lib/news/feeds";
 
 export type IngestionResult = {
-  fetched:number;
-  inserted:number;
-  summarized:number;
-  skipped:number;
-  failed:number;
+  fetched: number;
+  inserted: number;
+  summarized: number;
+  skipped: number;
+  failed: number;
 };
 
-function sleep(ms:number){
-  return new Promise(
-    resolve =>
-      setTimeout(resolve,ms)
+function sleep(ms: number) {
+  return new Promise(resolve =>
+    setTimeout(resolve, ms)
   );
 }
 
 async function upsertRawArticle(
-  article:RawArticle
-){
+  article: RawArticle
+) {
 
   const supabase =
     getServiceSupabase();
 
   const {
-    data:existing
+    data: existing,
+    error
   } =
   await supabase
-  .from("articles")
-  .select("id,status")
-  .eq(
-    "hash",
-    article.hash
-  )
-  .maybeSingle();
 
-  if(existing){
+    .from("articles")
+
+    .select(
+      "id,status"
+    )
+
+    .eq(
+      "hash",
+      article.hash
+    )
+
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (existing) {
 
     return {
 
       articleId:
         existing.id,
 
-      inserted:false,
+      inserted:
+        false,
 
       status:
         existing.status
+
     };
+
   }
 
   const {
-    data
+    data,
+    error: insertError
   } =
   await supabase
-  .from("articles")
-  .insert({
 
-    title:
-      article.title,
+    .from("articles")
 
-    source_name:
-      article.sourceName,
+    .insert({
 
-    source_url:
-      article.sourceUrl,
+      title:
+        article.title,
 
-    canonical_url:
-      article.canonicalUrl,
+      source_name:
+        article.sourceName,
 
-    author:
-      article.author,
+      source_url:
+        article.sourceUrl,
 
-    published_at:
-      article.publishedAt,
+      canonical_url:
+        article.canonicalUrl,
 
-    raw_excerpt:
-      article.rawExcerpt,
+      author:
+        article.author,
 
-    slug:
-      article.slug,
+      published_at:
+        article.publishedAt,
 
-    hash:
-      article.hash,
+      raw_excerpt:
+        article.rawExcerpt,
 
-    categories:
-      article.categoryHint
-      ? [article.categoryHint]
-      : [],
+      slug:
+        article.slug,
 
-    status:"raw",
+      hash:
+        article.hash,
 
-    metadata:{
-      categoryHint:
-      article.categoryHint
-    }
+      categories:
+        article.categoryHint
+          ? [article.categoryHint]
+          : [],
 
-  })
+      status:
+        "raw",
 
-  .select(
-    "id,status"
-  )
+      metadata: {
 
-  .single();
+        categoryHint:
+          article.categoryHint
+
+      }
+
+    })
+
+    .select(
+      "id,status"
+    )
+
+    .single();
+
+  if (insertError) {
+    throw insertError;
+  }
 
   return {
 
     articleId:
-      data!.id,
+      data.id,
 
-    inserted:true,
+    inserted:
+      true,
 
     status:
-      data!.status
+      data.status
+
   };
+
 }
 
-export async function runIngestion(){
+export async function runIngestion():
+
+Promise<IngestionResult> {
 
   const supabase =
     getServiceSupabase();
@@ -128,145 +156,197 @@ export async function runIngestion(){
       DEFAULT_FEEDS
     );
 
-  const result = {
+  const result =
+  {
 
     fetched:
       articles.length,
 
-    inserted:0,
+    inserted:
+      0,
 
-    summarized:0,
+    summarized:
+      0,
 
-    skipped:0,
+    skipped:
+      0,
 
-    failed:0
+    failed:
+      0
+
   };
 
-  for(
+  for (
+
     const article
     of articles
-  ){
 
-    let articleId="";
+  ) {
 
-    try{
+    let articleId =
+      "";
 
-      const upserted=
+    try {
+
+      const upserted =
+
       await upsertRawArticle(
         article
       );
 
-      articleId=
-      upserted.articleId;
+      articleId =
+        upserted.articleId;
 
-      if(
+      if (
+
         !upserted.inserted &&
-        upserted.status==="summarized"
-      ){
+
+        upserted.status ===
+        "summarized"
+
+      ) {
 
         result.skipped++;
 
         continue;
+
       }
 
-      if(
+      if (
+
         upserted.inserted
-      ){
+
+      ) {
 
         result.inserted++;
+
       }
 
-      const insight=
+      const insight =
+
       await generateFounderInsight({
 
         title:
-        article.title,
+          article.title,
 
         sourceName:
-        article.sourceName,
+          article.sourceName,
 
         url:
-        article.canonicalUrl,
+          article.canonicalUrl,
 
         excerpt:
-        article.rawExcerpt,
+          article.rawExcerpt,
 
         categoryHint:
-        article.categoryHint
+          article.categoryHint
+
       });
 
+      const {
+        error: updateError
+      } =
       await supabase
-      .from("articles")
-      .update({
 
-        summary:
-        insight.summary,
+        .from("articles")
 
-        founder_insight:
-        insight.founder_insight,
+        .update({
 
-        why_it_matters:
-        insight.why_it_matters,
+          summary:
+            insight.summary,
 
-        startup_opportunities:
-        insight.startup_opportunities,
+          founder_insight:
+            insight.founder_insight,
 
-        categories:
-        insight.categories,
+          why_it_matters:
+            insight.why_it_matters,
 
-        importance_score:
-        insight.importance_score,
+          startup_opportunities:
+            insight.startup_opportunities,
 
-        signal_score:
-        insight.importance_score,
+          categories:
+            insight.categories,
 
-        metadata:{
+          importance_score:
+            insight.importance_score,
 
-        [STRATEGIC_SIGNAL_METADATA_KEY]:
+          signal_score:
+            insight.importance_score,
 
-        insight.strategic_signal
+          metadata: {
 
-        },
+            [STRATEGIC_SIGNAL_METADATA_KEY]:
 
-        status:
-        "summarized"
+            insight
+              .strategic_signal
 
-      })
+          },
 
-      .eq(
-        "id",
-        articleId
-      );
+          status:
+            "summarized",
+
+          updated_at:
+            new Date()
+              .toISOString()
+
+        })
+
+        .eq(
+          "id",
+          articleId
+        );
+
+      if (
+        updateError
+      ) {
+
+        throw updateError;
+
+      }
 
       result.summarized++;
 
-      await sleep(4000);
+      await sleep(
+        1200
+      );
 
     }
 
-    catch(error){
+    catch (error) {
 
-      await supabase
-
-      .from("articles")
-
-      .update({
-
-        status:"failed"
-
-      })
-
-      .eq(
-        "id",
-        articleId
+      console.log(
+        "Failed:",
+        error
       );
+
+      if (
+        articleId
+      ) {
+
+        await supabase
+
+          .from("articles")
+
+          .update({
+
+            status:
+              "failed"
+
+          })
+
+          .eq(
+            "id",
+            articleId
+          );
+
+      }
 
       result.failed++;
 
-      console.log(error);
     }
 
   }
 
   return result;
+
 }
