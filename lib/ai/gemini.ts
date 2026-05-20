@@ -45,7 +45,7 @@ const CATEGORY_VALUES: ArticleCategory[] = [
 ];
 
 function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function generateFounderInsight(input: {
@@ -56,7 +56,8 @@ export async function generateFounderInsight(input: {
   categoryHint?: ArticleCategory | null;
 }): Promise<GeneratedInsight> {
 
-  const combined = `${input.title}\n${input.excerpt ?? ""}`;
+  const combined =
+    `${input.title}\n${input.excerpt ?? ""}`;
 
   const fallbackCategories =
     categorizeText(
@@ -116,22 +117,20 @@ export async function generateFounderInsight(input: {
 
         break;
 
-      } catch (error) {
+      } catch (err) {
 
         const message =
-          error instanceof Error
-            ? error.message
-            : "Unknown";
+          err instanceof Error
+            ? err.message
+            : "Unknown error";
 
         if (
           message.includes("429") ||
-          message.includes(
-            "TooManyRequests"
-          )
+          message.includes("TooManyRequests")
         ) {
 
           console.log(
-            `Rate limited. Retry ${attempt}/3`
+            `Gemini rate limit. Retry ${attempt}/3`
           );
 
           await sleep(15000);
@@ -139,7 +138,7 @@ export async function generateFounderInsight(input: {
           continue;
         }
 
-        throw error;
+        throw err;
       }
     }
 
@@ -163,6 +162,7 @@ export async function generateFounderInsight(input: {
 
     const signalParsed =
       strategicSignalSchema.safeParse({
+
         thesis:
           parsed.data.thesis,
 
@@ -170,20 +170,16 @@ export async function generateFounderInsight(input: {
           parsed.data.market_shift,
 
         why_founders_care:
-          parsed.data
-            .why_founders_care,
+          parsed.data.why_founders_care,
 
         startup_opportunities:
-          parsed.data
-            .startup_opportunities,
+          parsed.data.startup_opportunities,
 
         threatened_business_models:
-          parsed.data
-            .threatened_business_models,
+          parsed.data.threatened_business_models,
 
         future_trends:
-          parsed.data
-            .future_trends
+          parsed.data.future_trends
       });
 
     const strategic_signal =
@@ -224,15 +220,14 @@ export async function generateFounderInsight(input: {
 
       importance_score:
         normalizeImportanceScore(
-          parsed.data
-            .importance_score ||
-            fallbackScore
+          parsed.data.importance_score ||
+          fallbackScore
         ),
 
       strategic_signal
     };
 
-  } catch (error) {
+  } catch {
 
     console.log(
       "Gemini failed. Using fallback."
@@ -243,7 +238,12 @@ export async function generateFounderInsight(input: {
 }
 
 function buildFallbackInsight(
-  input: any,
+  input: {
+    title: string;
+    sourceName: string;
+    excerpt?: string | null;
+    categoryHint?: ArticleCategory | null;
+  },
   categories: ArticleCategory[],
   importance_score: number
 ): GeneratedInsight {
@@ -302,7 +302,9 @@ function buildFallbackInsight(
   };
 }
 
-function extractJson(value: string) {
+function extractJson(
+  value: string
+) {
 
   const cleaned =
     value
@@ -318,9 +320,19 @@ function extractJson(value: string) {
   const end =
     cleaned.lastIndexOf("}");
 
-  return cleaned.slice(
-    start,
-    end + 1
+  if (
+    start >= 0 &&
+    end > start
+  ) {
+
+    return cleaned.slice(
+      start,
+      end + 1
+    );
+  }
+
+  throw new Error(
+    "Invalid Gemini JSON"
   );
 }
 
@@ -332,6 +344,7 @@ function normalizeImportanceScore(
     score > 0 &&
     score <= 10
   ) {
+
     return Math.round(
       score * 10
     );
