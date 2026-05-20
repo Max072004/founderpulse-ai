@@ -6,33 +6,37 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
 
-  const secret = searchParams.get("secret");
+  const { searchParams } =
+    new URL(request.url);
+
+  const secret =
+    searchParams.get("secret");
 
   if (!secret) {
+
     return NextResponse.json(
       { error: "Missing secret" },
       { status: 401 }
     );
+
   }
 
   if (secret !== env.CRON_SECRET) {
+
     return NextResponse.json(
-      {
-        error: "Unauthorized",
-        received: secret ? "provided" : "missing",
-        expectedExists: !!env.CRON_SECRET,
-      },
+      { error: "Unauthorized" },
       { status: 401 }
     );
+
   }
 
-  // Start ingestion but don't wait
-  runIngestion().catch(console.error);
+  const result =
+    await runIngestion();
 
   return NextResponse.json({
     success: true,
-    message: "FounderPulse ingestion started",
+    data: result
   });
+
 }
